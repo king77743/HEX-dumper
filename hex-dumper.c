@@ -2,27 +2,38 @@
 #include <stdlib.h>
 
 int main() {
+    FILE* file= NULL;
     system("");
     char path[260];
-    
-    printf("Path to file: ");
-    if (scanf("%259s", path) != 1) {
-        return 1;
+    while(1){
+        printf("\033[1;32m[+]\033[0m Path to file: ");
+        if (fgets(path,sizeof(path),stdin)==NULL) {
+            return 1;
+        }
+        for (int i = 0; i < sizeof(path); i++) {
+            if (path[i] == '\n') {
+                path[i] = '\0';
+                break;
+            }
+            if (path[i] == '\0') {
+                break;
+            }
+        }
+        file = fopen(path, "rb");
+        if (file == NULL) {
+            printf("\033[1;31m[-]\033[0m ERROR: File not found!\n");
+            continue;
+            
+        }
+        break; 
     }
-
-    FILE* in = fopen(path, "rb");
-    if (in == NULL) {
-        printf("ERROR: file not found!\n");
-        return 2;
-    }
-
     int count = 0, address = 0;
     int ch;
     char buff[16];
     
     printf("\033[1;36m%08X\033[0m  ", address);
 
-    while (((ch = fgetc(in)) != EOF)) {
+    while (((ch = fgetc(file)) != EOF)) {
         printf("%02X ", ch);
 
         if (ch >= 32 && ch <= 122) {
@@ -44,7 +55,6 @@ int main() {
             count = 0;
         }
     }
-
     if (count > 0) {
         for (int i = count; i < 16; i++) {
             printf("   ");
@@ -55,13 +65,10 @@ int main() {
         }
         printf("\033[0m\n");
     } else {
-        printf("\r          \r"); 
+        printf("          "); 
     }
-
-    fclose(in);
+    fclose(file);
     printf("\nPress ENTER to continue...");
-    int c;
-    while((c=getchar())!='\n' && c!=EOF);
     getchar();
     return 0;
 }
