@@ -4,39 +4,46 @@
 #include "clear_bufer.h"
 void run_analyze(FILE *file){
     fseek(file,0,SEEK_END);
-    long size_file=ftell(file);
+    unsigned int size_file=ftell(file);
     fseek(file,0,SEEK_SET);
-
     int mode;
-    int bytes;
-    printf("[ 1: Full analyze (%ld bytes)  |  2: Custom byte limit ]\n",size_file);
-    
+    unsigned int bytes;
+    int quanity;
+    printf("[ 1: Full analyze (%u bytes)  |  2: Custom rows limit ]\n",size_file);
     while (1){
         printf("Select analyze mode > ");
         scanf("%d",&mode);
         clear_buff();
         if (mode==1){
-            bytes=(int)size_file;
+            bytes=size_file;
             break;
         }
         else if(mode==2){
-            printf("File size: %ld bytes\n",size_file);
+            unsigned int stroki=size_file/16;
+            unsigned int ostatok=size_file-(stroki*16);
+            if (ostatok>0){
+                stroki++;
+            }
             while (1){
-                printf("Enter bytes to read: ");
-                if (scanf("%d",&bytes)!=1){
+                printf("Enter row to read (max %u): ",stroki);
+                if (scanf("%d",&quanity)!=1){
                     printf("ERROR: Invalid number!\n");
                     clear_buff();
                     continue;
                 }
                 clear_buff();
-                if (bytes<0){
+                if (quanity<0){
                     printf("bytes cannot be negative\n");
                     continue;
                 }
-                if (bytes>size_file){
-                    printf("you cannot read %d bytes. File only has %ld bytes\n",bytes,size_file);
+                if ((unsigned int)quanity >stroki){
+                    printf("you cannot read %d rows. File only has %u rows\n",quanity,stroki);
                     continue;
                 }
+                if ((unsigned)quanity==stroki && ostatok>0){
+                    bytes=(stroki*16)+ostatok;
+                }
+                bytes=(unsigned int)quanity*16;
                 break;
             }
             break;
@@ -46,16 +53,12 @@ void run_analyze(FILE *file){
             continue;
         }
     }
-
     int count = 0, address = 0;
     int ch;
     char buff[16];
-    
     while(1){
         int total=0;
-    
         while (total<bytes && (ch = fgetc(file)) != EOF) {
-            
             if (count == 0) {
                 printf("\033[1;36m%08X\033[0m  ", address);
             }
@@ -77,7 +80,6 @@ void run_analyze(FILE *file){
                 count = 0;
             }
         }
-        
         if (ch==EOF){
             if (count > 0) {
                 for (int i = count; i < 16; i++) {
@@ -102,35 +104,44 @@ void run_analyze(FILE *file){
                 }
                 printf("\033[0m\n");
             }
-
         printf("\nContinue Reading? (1: Yes / 2: NO): ");
         int choice;
         scanf("%d",&choice);
         clear_buff();
-        
         if (choice==1) {
-            long cont=size_file-ftell(file);
-            if (cont<=0){
-                printf("No more bytes to read!\n");
-                if (count > 0) {
-                    for (int i = count; i < 16; i++) printf("   ");
-                    printf(" | \033[1;32m");
-                    for (int i = 0; i < count; i++) printf("%c", buff[i]);
-                    printf("\033[0m\n");
-                }
+            unsigned int cont=size_file-(unsigned int)ftell(file);
+            unsigned int cont_stroki=cont/16;
+            unsigned int cont_ostatok=cont%16;
+            if (cont_ostatok>0){
+                cont_stroki++;
+            }
+            if (cont_stroki==0){
+                printf("No more rows to read!\n");
                 break;
             }
-            while(1){
-                printf("Enter next bytes (max %ld): ",cont);
-                scanf("%d",&bytes);
-                clear_buff();
-                if (bytes<0 || bytes>cont){
-                    printf("Invalid bytes!\n");
+            while(1){ 
+                printf("Enter next rows (max %u): ",cont_stroki);
+                if (scanf("%d",&quanity)!=1){
+                    printf("ERROR: Invalid number!\n");
+                    clear_buff();
                     continue;
                 }
+                clear_buff();
+                
+                if (quanity<0){
+                    printf("Rows cannot be negative!\n");
+                    continue;
+                }
+                if ((unsigned)quanity>cont_stroki){
+                    printf("Invalid rows! maximum: %u\n",cont_stroki);
+                    continue;
+                }
+                if ((unsigned int)quanity == cont_stroki && cont_ostatok > 0) {
+                    bytes = cont;
+                }
+                bytes=(unsigned)quanity*16;
                 break;
             }
-            
             printf("\033[2K\033[A\033[2K\033[A\033[2K\033[A");
             fflush(stdout);
         }
