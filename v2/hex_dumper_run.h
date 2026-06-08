@@ -104,6 +104,9 @@ void run_analyze(FILE *file){
                 }
                 printf("\033[0m\n");
             }
+        if (mode==1){
+            break;
+        }
         printf("\nContinue Reading? (1: Yes / 2: NO): ");
         int choice;
         scanf("%d",&choice);
