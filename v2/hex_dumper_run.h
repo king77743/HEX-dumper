@@ -43,7 +43,8 @@ void run_analyze(FILE *file){
                 if ((unsigned)quanity==stroki && ostatok>0){
                     bytes=(stroki*16)+ostatok;
                 }
-                bytes=(unsigned int)quanity*16;
+                else{bytes=(unsigned int)quanity*16;}
+                
                 break;
             }
             break;
@@ -53,57 +54,54 @@ void run_analyze(FILE *file){
             continue;
         }
     }
-    int count = 0, address = 0;
-    int ch;
+    int count, address = 0;
+    int bytes_to_read;
     char buff[16];
     while(1){
         int total=0;
-        while (total<bytes && (ch = fgetc(file)) != EOF) {
-            if (count == 0) {
-                printf("\033[1;36m%08X\033[0m  ", address);
+        while (total<bytes) {
+            
+            int limit=bytes-total;
+            if(limit<16){
+                bytes_to_read=limit;
             }
-            printf("%02X ", ch);
-            if (ch >= 32 && ch <= 126) {
-                buff[count] = (char)ch;
-            } else {
-                buff[count] = '.';
+            else{
+                bytes_to_read=16;
             }
-            count++;
-            total++;
-            if (count == 16) {
-                printf(" | \033[1;32m");
-                for (int i = 0; i < 16; i++) {
-                    printf("%c", buff[i]);
-                }
-                printf("\033[0m\n");
-                address += 16;
-                count = 0;
+            count=fread(buff,1,bytes_to_read,file);
+            if (count==0){
+                break;
             }
-        }
-        if (ch==EOF){
-            if (count > 0) {
-                for (int i = count; i < 16; i++) {
+            printf("\033[1;36m%08X\033[0m  ", address);
+            for (int i=0;i<16;i++){
+                if (i<count){
+                    printf("%02X ",(unsigned char) buff[i]);
+                }else{
                     printf("   ");
                 }
-                printf(" | \033[1;32m");
-                for (int i = 0; i < count; i++) {
-                    printf("%c", buff[i]);
-                }
-                printf("\033[0m\n");
             }
-            printf("End of file!\n");
+            printf(" | \033[1;32m");
+            for (int i = 0; i < count; i++) {
+                unsigned char ch=buff[i];
+                if (ch>=32 && ch<=126){
+                    printf("%c",ch);
+
+                }
+                else{
+                    printf(".");
+                }
+            }
+            printf("\033[0m\n");
+            address+=count;
+            total+=count;
+            
+        }
+        
+        if (feof(file)){
+            printf("End Of File!\n");
             break;
+
         }
-        if (count > 0) {
-                for (int i = count; i < 16; i++) {
-                    printf("   ");
-                }
-                printf(" | \033[1;32m");
-                for (int i = 0; i < count; i++) {
-                    printf("%c", buff[i]);
-                }
-                printf("\033[0m\n");
-            }
         if (mode==1){
             break;
         }
@@ -142,7 +140,8 @@ void run_analyze(FILE *file){
                 if ((unsigned int)quanity == cont_stroki && cont_ostatok > 0) {
                     bytes = cont;
                 }
-                bytes=(unsigned)quanity*16;
+                else {bytes=(unsigned)quanity*16;}
+                
                 break;
             }
             printf("\033[2K\033[A\033[2K\033[A\033[2K\033[A");
